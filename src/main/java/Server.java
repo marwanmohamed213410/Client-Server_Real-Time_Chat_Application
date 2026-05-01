@@ -17,16 +17,28 @@ public class Server {
 
         Scanner fromClient = new Scanner(socket.getInputStream());
         PrintWriter toClient = new PrintWriter(socket.getOutputStream());
+        Scanner fromConsole = new Scanner(System.in);
 
-        String input, output;
+        String inputFromServer, inputFromConsole;
 
         while (true) {
-            input = fromClient.nextLine();
-            System.out.println("CLient: " + input);
+            inputFromServer = fromClient.nextLine();
+            System.out.println("CLient: " + inputFromServer);
 
-            output = input.toUpperCase();
-            toClient.println(output);
+            if (inputFromServer.equals("@exit")) {
+                break;
+            }
+
+            System.out.print("Server: ");
+            inputFromConsole = fromConsole.nextLine();
+
+            toClient.println(inputFromConsole);
+            toClient.flush();
+            
+            if (inputFromConsole.equals("@exit")) {
+                break;
+            }
         }
-//        socket.close();
+        socket.close();
     }
 }
