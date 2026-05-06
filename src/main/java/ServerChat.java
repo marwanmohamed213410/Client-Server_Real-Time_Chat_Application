@@ -78,6 +78,7 @@ public class ServerChat extends javax.swing.JFrame {
         // TODO add your handling code here:
         String message = jTextAreaMessage.getText();
         writer.println(message);
+        jTextAreaChat.append("Server: " + message + "\n");
         jTextAreaMessage.setText("");
     }//GEN-LAST:event_jButtonSendActionPerformed
 

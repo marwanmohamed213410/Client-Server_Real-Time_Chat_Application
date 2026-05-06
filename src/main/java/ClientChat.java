@@ -1,14 +1,19 @@
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.util.Scanner;
+
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
-
 /**
  *
  * @author Marwan
  */
 public class ClientChat extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(ClientChat.class.getName());
 
     /**
@@ -37,6 +42,11 @@ public class ClientChat extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Client");
         addPropertyChangeListener(this::formPropertyChange);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowOpened(java.awt.event.WindowEvent evt) {
+                formWindowOpened(evt);
+            }
+        });
         getContentPane().setLayout(new java.awt.BorderLayout(5, 5));
 
         jTextAreaChat.setColumns(20);
@@ -68,7 +78,34 @@ public class ClientChat extends javax.swing.JFrame {
 
     private void jButtonSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSendActionPerformed
         // TODO add your handling code here:
+        String message = jTextAreaMessage.getText();
+        writer.println(message);
+        writer.flush();
+        jTextAreaChat.append("Client: " + message + "\n");
+        jTextAreaMessage.setText("");
     }//GEN-LAST:event_jButtonSendActionPerformed
+
+    private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
+        // TODO add your handling code here:
+        try {
+            socket = new Socket("localhost", 20597);
+            scanner = new Scanner(socket.getInputStream());
+            writer = new PrintWriter(socket.getOutputStream());
+
+            Thread connectionThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (true) {
+                        String message = scanner.nextLine();
+                        jTextAreaChat.append("Server: " + message + "\n");
+                    }
+                }
+            });
+            connectionThread.start();
+        } catch (IOException ex) {
+            System.getLogger(ClientChat.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+    }//GEN-LAST:event_formWindowOpened
 
     /**
      * @param args the command line arguments
@@ -103,4 +140,8 @@ public class ClientChat extends javax.swing.JFrame {
     private javax.swing.JTextArea jTextAreaChat;
     private javax.swing.JTextArea jTextAreaMessage;
     // End of variables declaration//GEN-END:variables
+    private Socket socket;
+    private Scanner scanner;
+    private PrintWriter writer;
+
 }
