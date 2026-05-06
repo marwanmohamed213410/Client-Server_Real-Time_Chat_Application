@@ -9,16 +9,14 @@ import java.util.Scanner;
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
-
 /**
  *
  * @author Marwan
  */
 public class ServerChat extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(ServerChat.class.getName());
 
-    
     public ServerChat() {
         initComponents();
     }
@@ -80,6 +78,7 @@ public class ServerChat extends javax.swing.JFrame {
         // TODO add your handling code here:
         String message = jTextAreaMessage.getText();
         writer.println(message);
+        jTextAreaChat.append("Server: " + message + "\n");
         jTextAreaMessage.setText("");
     }//GEN-LAST:event_jButtonSendActionPerformed
 
@@ -89,13 +88,18 @@ public class ServerChat extends javax.swing.JFrame {
             serverSocket = new ServerSocket(20597);
             socket = serverSocket.accept();
             scanner = new Scanner(socket.getInputStream());
-            writer = new PrintWriter(socket.getOutputStream(),true);
-            
-            while(true) {
-                String message = scanner.nextLine();
-                jTextAreaChat .append("Client: " + message + "\n");
-            }
-            
+            writer = new PrintWriter(socket.getOutputStream(), true);
+
+            Thread connectionThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (true) {
+                        String message = scanner.nextLine();
+                        jTextAreaChat.append("Client: " + message + "\n");
+                    }
+                }
+            });
+            connectionThread.start();
         } catch (IOException ex) {
             System.getLogger(ServerChat.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
@@ -138,5 +142,5 @@ public class ServerChat extends javax.swing.JFrame {
     private Socket socket;
     private Scanner scanner;
     private PrintWriter writer;
-    
+
 }
