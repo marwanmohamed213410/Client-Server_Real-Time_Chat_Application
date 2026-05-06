@@ -34,7 +34,7 @@ public class Server {
 
             toClient.println(inputFromConsole);
             toClient.flush();
-            
+
             if (inputFromConsole.equals("@exit")) {
                 break;
             }
