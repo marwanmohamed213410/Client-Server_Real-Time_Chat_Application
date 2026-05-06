@@ -1,3 +1,4 @@
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -27,9 +28,11 @@ public class Client {
                 if (input.equals("@exit")) {
                     break;
                 }
+                
                 output = fromServer.nextLine();
                 System.out.print("Server: ");
                 System.out.println(output);
+                
                 if (output.equals("@exit")) {
                     break;
                 }
