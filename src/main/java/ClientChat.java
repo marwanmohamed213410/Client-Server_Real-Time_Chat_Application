@@ -15,12 +15,15 @@ import java.util.Scanner;
 public class ClientChat extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(ClientChat.class.getName());
-
+      private final String clientName;
     /**
      * Creates new form ClientChat
+     * @param userName
      */
-    public ClientChat() {
+    public ClientChat(String userName) {
+        this.clientName = userName;
         initComponents();
+         setTitle("Client - " + clientName);
     }
 
     /**
@@ -194,7 +197,7 @@ public class ClientChat extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new ClientChat().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> new Login().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -208,5 +211,4 @@ public class ClientChat extends javax.swing.JFrame {
     private Socket socket;
     private Scanner scanner;
     private PrintWriter writer;
-
 }
