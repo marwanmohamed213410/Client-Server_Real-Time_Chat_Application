@@ -112,7 +112,7 @@ public class ClientChat extends javax.swing.JFrame {
                                          *  @clear: Clear Chat                 * 
                                          *  @help : Show all commands          *
                                          *  @exit : exit program               *
-                                         ***************************************
+                                         ***************************************\n
                                          """);
                 break;
             default:
@@ -123,24 +123,45 @@ public class ClientChat extends javax.swing.JFrame {
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
         // TODO add your handling code here:
-        try {
-            socket = new Socket("localhost", 20597);
-            scanner = new Scanner(socket.getInputStream());
-            writer = new PrintWriter(socket.getOutputStream());
+        Thread connectioThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        socket = new Socket("localhost", 20597);
+                        scanner = new Scanner(socket.getInputStream());
+                        writer = new PrintWriter(socket.getOutputStream());
 
-            Thread connectionThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    while (true) {
-                        String message = scanner.nextLine();
-                        jTextAreaChat.append("Server: " + message + "\n");
+                        javax.swing.SwingUtilities.invokeLater(() -> {
+                            jTextAreaChat.append("*** Connected to server ***\n");
+                            jButtonSend.setEnabled(true);
+                        });
+
+                        while (true) {
+                            String message = scanner.nextLine();
+                            javax.swing.SwingUtilities.invokeLater(() -> {
+                                jTextAreaChat.append("Server: " + message + "\n");
+                            });
+                        }
+
+                    } catch (IOException ex) {
+                        javax.swing.SwingUtilities.invokeLater(() -> {
+                            jTextAreaChat.append("*** Server is not running, retrying... ***\n");
+                            jButtonSend.setEnabled(false);
+                        });
+
+                        try {
+                            Thread.sleep(3000);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
                     }
                 }
-            });
-            connectionThread.start();
-        } catch (IOException ex) {
-            System.getLogger(ClientChat.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
-        }
+            }
+        });
+        connectioThread.setDaemon(true);
+        connectioThread.start();
     }//GEN-LAST:event_formWindowOpened
 
     private void jTextAreaMessageKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextAreaMessageKeyPressed

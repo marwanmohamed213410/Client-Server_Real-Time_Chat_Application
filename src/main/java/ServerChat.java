@@ -92,7 +92,8 @@ public class ServerChat extends javax.swing.JFrame {
             jTextAreaMessage.setText("");
         }
     }//GEN-LAST:event_jButtonSendActionPerformed
-        private void commandHandler(String command) {
+    
+    private void commandHandler(String command) {
             switch (command.toLowerCase()) {
                 case "@exit":
                     jTextAreaChat.append("close system........\n");
