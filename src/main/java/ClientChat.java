@@ -59,6 +59,11 @@ public class ClientChat extends javax.swing.JFrame {
 
         jTextAreaMessage.setColumns(20);
         jTextAreaMessage.setRows(5);
+        jTextAreaMessage.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                jTextAreaMessageKeyPressed(evt);
+            }
+        });
         jScrollPane2.setViewportView(jTextAreaMessage);
 
         jPanel1.add(jScrollPane2, java.awt.BorderLayout.CENTER);
@@ -106,6 +111,14 @@ public class ClientChat extends javax.swing.JFrame {
             System.getLogger(ClientChat.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
     }//GEN-LAST:event_formWindowOpened
+
+    private void jTextAreaMessageKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextAreaMessageKeyPressed
+        // TODO add your handling code here:
+        if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
+            evt.consume();
+            jButtonSend.doClick();
+        }
+    }//GEN-LAST:event_jTextAreaMessageKeyPressed
 
     /**
      * @param args the command line arguments
