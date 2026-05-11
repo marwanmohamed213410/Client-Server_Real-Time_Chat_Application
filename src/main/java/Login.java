@@ -168,8 +168,11 @@ public class Login extends javax.swing.JFrame {
         }
 
         if (users.containsKey(userName) && users.get(userName).equals(password)) {
-            ClientChat client = new ClientChat(userName);
-            client.setVisible(true);
+            if (userName.equals("admin")) {
+                new ServerChat().setVisible(true);
+            } else {
+                new ClientChat(userName).setVisible(true);
+            }
             this.dispose();
         } else {
             javax.swing.JOptionPane.showMessageDialog(this, "Wrong username or password!", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
@@ -229,7 +232,7 @@ public class Login extends javax.swing.JFrame {
             java.io.File file = new java.io.File("resources/users.txt");
 
             if (!file.exists()) {
-                javax.swing.JOptionPane.showMessageDialog(this, "users.txt not found at: " + file.getAbsolutePath(),"Error",javax.swing.JOptionPane.ERROR_MESSAGE);
+                javax.swing.JOptionPane.showMessageDialog(this, "users.txt not found at: " + file.getAbsolutePath(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
