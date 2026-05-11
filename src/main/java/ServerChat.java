@@ -81,12 +81,43 @@ public class ServerChat extends javax.swing.JFrame {
 
     private void jButtonSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSendActionPerformed
         // TODO add your handling code here:
-        String message = jTextAreaMessage.getText();
-        writer.println(message);
-        jTextAreaChat.append("Server: " + message + "\n");
-        jTextAreaMessage.setText("");
+        String message = jTextAreaMessage.getText().trim();
+        if (message.startsWith("@")) {
+            commandHandler(message);
+            jTextAreaMessage.setText("");
+        } else {
+            writer.println(message);
+            writer.flush();
+            jTextAreaChat.append("Client: " + message + "\n");
+            jTextAreaMessage.setText("");
+        }
     }//GEN-LAST:event_jButtonSendActionPerformed
+        private void commandHandler(String command) {
+            switch (command.toLowerCase()) {
+                case "@exit":
+                    jTextAreaChat.append("close system........\n");
+                    System.exit(0);
+                    break;
 
+                case "@clear":
+                    jTextAreaChat.setText("");
+                    break;
+
+                case "@help":
+                    jTextAreaChat.append("""
+                                         ***************************************
+                                         *  @clear: Clear Chat                 * 
+                                         *  @help : Show all commands          *
+                                         *  @exit : exit program               *
+                                         ***************************************
+                                         """);
+                    break;
+                default:
+                    jTextAreaChat.append("*** undefined command: " + command + " ***\n");
+                    break;
+            }
+        }
+        
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
         try {
             // TODO add your handling code here:
@@ -118,30 +149,30 @@ public class ServerChat extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jTextAreaMessageKeyPressed
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+        /**
+         * @param args the command line arguments
          */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
+        public static void main(String args[]) {
+            /* Set the Nimbus look and feel */
+            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+             */
+            try {
+                for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                    if ("Nimbus".equals(info.getName())) {
+                        javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                        break;
+                    }
                 }
+            } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+                logger.log(java.util.logging.Level.SEVERE, null, ex);
             }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
+            //</editor-fold>
 
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new ServerChat().setVisible(true));
-    }
+            /* Create and display the form */
+            java.awt.EventQueue.invokeLater(() -> new ServerChat().setVisible(true));
+        }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonSend;

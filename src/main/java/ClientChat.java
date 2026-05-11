@@ -83,11 +83,42 @@ public class ClientChat extends javax.swing.JFrame {
 
     private void jButtonSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSendActionPerformed
         // TODO add your handling code here:
-        String message = jTextAreaMessage.getText();
-        writer.println(message);
-        writer.flush();
-        jTextAreaChat.append("Client: " + message + "\n");
-        jTextAreaMessage.setText("");
+        String message = jTextAreaMessage.getText().trim();
+        if (message.startsWith("@")) {
+            commandHandler(message);
+            jTextAreaMessage.setText("");
+        } else {
+            writer.println(message);
+            writer.flush();
+            jTextAreaChat.append("Client: " + message + "\n");
+            jTextAreaMessage.setText("");
+        }
+    }
+
+    private void commandHandler(String command) {
+        switch (command.toLowerCase()) {
+            case "@exit":
+                jTextAreaChat.append("close system........\n");
+                System.exit(0);
+                break;
+
+            case "@clear":
+                jTextAreaChat.setText("");
+                break;
+
+            case "@help":
+                jTextAreaChat.append("""
+                                         ***************************************
+                                         *  @clear: Clear Chat                 * 
+                                         *  @help : Show all commands          *
+                                         *  @exit : exit program               *
+                                         ***************************************
+                                         """);
+                break;
+            default:
+                jTextAreaChat.append("*** undefined command: " + command + " ***\n");
+                break;
+        }
     }//GEN-LAST:event_jButtonSendActionPerformed
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
