@@ -15,15 +15,17 @@ import java.util.Scanner;
 public class ClientChat extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(ClientChat.class.getName());
-      private final String clientName;
+    private final String clientName;
+
     /**
      * Creates new form ClientChat
+     *
      * @param userName
      */
     public ClientChat(String userName) {
         this.clientName = userName;
         initComponents();
-         setTitle("Client - " + clientName);
+        setTitle("Client - " + clientName);
     }
 
     /**
@@ -77,7 +79,8 @@ public class ClientChat extends javax.swing.JFrame {
 
         getContentPane().add(jPanel1, java.awt.BorderLayout.PAGE_END);
 
-        setBounds(0, 0, 565, 330);
+        setSize(new java.awt.Dimension(565, 330));
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void formPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_formPropertyChange
@@ -91,9 +94,9 @@ public class ClientChat extends javax.swing.JFrame {
             commandHandler(message);
             jTextAreaMessage.setText("");
         } else {
-            writer.println(message);
+            writer.println(clientName + ": " + message);
             writer.flush();
-            jTextAreaChat.append("Client: " + message + "\n");
+            jTextAreaChat.append("Me: " + message + "\n");
             jTextAreaMessage.setText("");
         }
     }
@@ -109,12 +112,19 @@ public class ClientChat extends javax.swing.JFrame {
                 jTextAreaChat.setText("");
                 break;
 
+            case "@all":
+                writer.println("@all:" + clientName);
+                writer.flush();
+                break;
+
             case "@help":
                 jTextAreaChat.append("""
+                                     \n
                                          ***************************************
                                          *  @clear: Clear Chat                 * 
                                          *  @help : Show all commands          *
                                          *  @exit : exit program               *
+                                         *  @all  : show all connected users   *
                                          ***************************************\n
                                          """);
                 break;
@@ -133,7 +143,10 @@ public class ClientChat extends javax.swing.JFrame {
                     try {
                         socket = new Socket("localhost", 20597);
                         scanner = new Scanner(socket.getInputStream());
-                        writer = new PrintWriter(socket.getOutputStream());
+                        writer = new PrintWriter(socket.getOutputStream(), true);
+
+                        writer.println("*** " + clientName + " has joined the chat ***");
+                        writer.flush();
 
                         javax.swing.SwingUtilities.invokeLater(() -> {
                             jTextAreaChat.append("*** Connected to server ***\n");
@@ -143,11 +156,16 @@ public class ClientChat extends javax.swing.JFrame {
                         while (true) {
                             String message = scanner.nextLine();
                             javax.swing.SwingUtilities.invokeLater(() -> {
-                                jTextAreaChat.append("Server: " + message + "\n");
+                                jTextAreaChat.append(message + "\n");
                             });
                         }
 
                     } catch (IOException ex) {
+                        if (writer != null) {
+                            writer.println("*** " + clientName + " has left the chat ***");
+                            writer.flush();
+                        }
+
                         javax.swing.SwingUtilities.invokeLater(() -> {
                             jTextAreaChat.append("*** Server is not running, retrying... ***\n");
                             jButtonSend.setEnabled(false);
