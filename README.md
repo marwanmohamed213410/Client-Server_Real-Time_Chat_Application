@@ -2,9 +2,6 @@
 
 A real-time chat application built with Java Swing, supporting multiple clients communicating through a central server over TCP/IP.
 
-> 📹 [Demo Video](#) ← _coming soon_\
-> 📄 [Documentation](#) ← _coming soon_
-
 ---
 
 ## Table of Contents
