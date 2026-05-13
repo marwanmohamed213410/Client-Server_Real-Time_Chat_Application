@@ -57,6 +57,11 @@ public class ServerChat extends javax.swing.JFrame {
 
         jTextAreaMessage.setColumns(20);
         jTextAreaMessage.setRows(5);
+        jTextAreaMessage.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                jTextAreaMessageKeyPressed(evt);
+            }
+        });
         jScrollPane2.setViewportView(jTextAreaMessage);
 
         jPanel1.add(jScrollPane2, java.awt.BorderLayout.CENTER);
@@ -67,7 +72,8 @@ public class ServerChat extends javax.swing.JFrame {
 
         getContentPane().add(jPanel1, java.awt.BorderLayout.PAGE_END);
 
-        setBounds(0, 0, 565, 330);
+        setSize(new java.awt.Dimension(565, 330));
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void formPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_formPropertyChange
@@ -76,34 +82,183 @@ public class ServerChat extends javax.swing.JFrame {
 
     private void jButtonSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSendActionPerformed
         // TODO add your handling code here:
-        String message = jTextAreaMessage.getText();
-        writer.println(message);
-        jTextAreaChat.append("Server: " + message + "\n");
-        jTextAreaMessage.setText("");
+        String message = jTextAreaMessage.getText().trim();
+        if (message.startsWith("@")) {
+            commandHandler(message);
+            jTextAreaMessage.setText("");
+        } else {
+            synchronized (clients) {
+                for (PrintWriter client : clients.keySet()) {
+                    client.println("Server: " + message);
+                    client.flush();
+                }
+            }
+            jTextAreaChat.append("Me: " + message + "\n");
+            jTextAreaMessage.setText("");
+        }
     }//GEN-LAST:event_jButtonSendActionPerformed
 
-    private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
-        try {
-            // TODO add your handling code here:
-            serverSocket = new ServerSocket(20597);
-            socket = serverSocket.accept();
-            scanner = new Scanner(socket.getInputStream());
-            writer = new PrintWriter(socket.getOutputStream(), true);
+    private void commandHandler(String command) {
+        switch (command.toLowerCase()) {
+            case "@exit":
+                jTextAreaChat.append("close system........\n");
+                System.exit(0);
+                break;
 
-            Thread connectionThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    while (true) {
-                        String message = scanner.nextLine();
-                        jTextAreaChat.append("Client: " + message + "\n");
+            case "@clear":
+                jTextAreaChat.setText("");
+                break;
+
+            case "@all":
+                StringBuilder sb = new StringBuilder();
+                synchronized (clients) {
+                    sb.append("*** Online Clients (" + clients.size() + ") ***\n");
+                    for (String name : clients.values()) {
+                        sb.append("  - " + name + "\n");
                     }
                 }
-            });
-            connectionThread.start();
-        } catch (IOException ex) {
-            System.getLogger(ServerChat.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                jTextAreaChat.append(sb.toString());
+                break;
+
+            case "@help":
+                jTextAreaChat.append("""
+                                         \n
+                                         ***************************************
+                                         *  @clear: Clear Chat                 * 
+                                         *  @help : Show all commands          *
+                                         *  @exit : exit program               *
+                                         *  @all  : show all connected users   *
+                                         ***************************************
+                                         \n
+                                         """);
+                break;
+            default:
+                jTextAreaChat.append("*** undefined command: " + command + " ***\n");
+                break;
+        }
+    }
+
+    private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
+        // TODO add your handling code here:
+        Thread serverThread = new Thread(() -> {
+            try {
+                serverSocket = new ServerSocket(20597);
+                javax.swing.SwingUtilities.invokeLater(() -> jTextAreaChat.append("*** Server Started ***\n"));
+
+                while (true) {
+                    Socket clientSocket = serverSocket.accept();
+
+                    Thread clientThread = new Thread(() -> {
+                        PrintWriter clientWriter = null;
+                        try {
+                            Scanner clientScanner = new Scanner(clientSocket.getInputStream());
+                            PrintWriter cw = new PrintWriter(clientSocket.getOutputStream(), true);
+                            clientWriter = cw;
+
+                            synchronized (clients) {
+                                clients.put(cw, "Unknown");
+                            }
+
+                            while (clientScanner.hasNextLine()) {
+                                String message = clientScanner.nextLine();
+
+                                if (message.startsWith("@msg:")) {
+                                    String[] parts = message.split(":", 4);
+                                    if (parts.length == 4) {
+                                        String target = parts[1].trim();
+                                        String sender = parts[2].trim();
+                                        String msg = parts[3].trim();
+
+                                        synchronized (clients) {
+                                            for (java.util.Map.Entry<PrintWriter, String> entry : clients.entrySet()) {
+                                                if (entry.getValue().equals(target)) {
+                                                    entry.getKey().println("[Private] " + sender + ": " + msg);
+                                                    entry.getKey().flush();
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        javax.swing.SwingUtilities.invokeLater(() -> jTextAreaChat.append("[Private] " + sender + " → " + target + "\n"));
+                                        continue;
+                                    }
+                                }
+
+                                if (message.startsWith("@all:")) {
+                                    String requester = message.replace("@all:", "").trim();
+                                    StringBuilder sb = new StringBuilder();
+                                    synchronized (clients) {
+                                        sb.append("*** Online Clients (" + clients.size() + ") ***\n");
+                                        for (java.util.Map.Entry<PrintWriter, String> entry : clients.entrySet()) {
+                                            if (entry.getValue().equals(requester)) {
+                                                sb.append("  - " + entry.getValue() + " (You)\n");
+                                            } else {
+                                                sb.append("  - " + entry.getValue() + "\n");
+                                            }
+                                        }
+                                    }
+                                    cw.println(sb.toString());
+                                    cw.flush();
+                                    continue;
+                                }
+
+                                if (message.startsWith("*** ") && message.contains(" has joined")) {
+                                    String name = message.replace("*** ", "").replace(" has joined the chat ***", "").trim();
+                                    synchronized (clients) {
+                                        clients.put(cw, name);
+                                    }
+                                }
+
+                                javax.swing.SwingUtilities.invokeLater(()
+                                        -> jTextAreaChat.append(message + "\n"));
+                                broadcast(message, cw);
+                            }
+
+                        } catch (IOException ex) {
+                        } finally {
+                            if (clientWriter != null) {
+                                synchronized (clients) {
+                                    clients.remove(clientWriter);
+                                }
+                            }
+
+                            try {
+                                clientSocket.close();
+                            } catch (IOException e) {
+                            }
+                        }
+                    });
+                    clientThread.setDaemon(true);
+                    clientThread.start();
+                }
+
+            } catch (IOException ex) {
+                javax.swing.SwingUtilities.invokeLater(()
+                        -> jTextAreaChat.append("*** Server Error ***\n"));
+            }
+        });
+        serverThread.setDaemon(true);
+        serverThread.start();
+    }
+
+    private void broadcast(String message, PrintWriter sender) {
+        synchronized (clients) {
+            for (PrintWriter client : clients.keySet()) {
+                if (client != sender) {
+                    client.println(message);
+                    client.flush();
+                }
+            }
         }
     }//GEN-LAST:event_formWindowOpened
+
+    private void jTextAreaMessageKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextAreaMessageKeyPressed
+        // TODO add your handling code here:
+        if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
+            evt.consume();
+            jButtonSend.doClick();
+        }
+    }//GEN-LAST:event_jTextAreaMessageKeyPressed
 
     /**
      * @param args the command line arguments
@@ -127,7 +282,7 @@ public class ServerChat extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new ServerChat().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> new Login().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -139,8 +294,6 @@ public class ServerChat extends javax.swing.JFrame {
     private javax.swing.JTextArea jTextAreaMessage;
     // End of variables declaration//GEN-END:variables
     private ServerSocket serverSocket;
-    private Socket socket;
-    private Scanner scanner;
-    private PrintWriter writer;
 
+    private java.util.Map<PrintWriter, String> clients = new java.util.LinkedHashMap<>();
 }

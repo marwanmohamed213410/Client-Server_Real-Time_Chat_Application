@@ -15,12 +15,17 @@ import java.util.Scanner;
 public class ClientChat extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(ClientChat.class.getName());
+    private final String clientName;
 
     /**
      * Creates new form ClientChat
+     *
+     * @param userName
      */
-    public ClientChat() {
+    public ClientChat(String userName) {
+        this.clientName = userName;
         initComponents();
+        setTitle("Client - " + clientName);
     }
 
     /**
@@ -59,6 +64,11 @@ public class ClientChat extends javax.swing.JFrame {
 
         jTextAreaMessage.setColumns(20);
         jTextAreaMessage.setRows(5);
+        jTextAreaMessage.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                jTextAreaMessageKeyPressed(evt);
+            }
+        });
         jScrollPane2.setViewportView(jTextAreaMessage);
 
         jPanel1.add(jScrollPane2, java.awt.BorderLayout.CENTER);
@@ -69,7 +79,8 @@ public class ClientChat extends javax.swing.JFrame {
 
         getContentPane().add(jPanel1, java.awt.BorderLayout.PAGE_END);
 
-        setBounds(0, 0, 565, 330);
+        setSize(new java.awt.Dimension(565, 330));
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void formPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_formPropertyChange
@@ -78,34 +89,124 @@ public class ClientChat extends javax.swing.JFrame {
 
     private void jButtonSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSendActionPerformed
         // TODO add your handling code here:
-        String message = jTextAreaMessage.getText();
-        writer.println(message);
-        writer.flush();
-        jTextAreaChat.append("Client: " + message + "\n");
-        jTextAreaMessage.setText("");
+        String message = jTextAreaMessage.getText().trim();
+        if (message.startsWith("@")) {
+            commandHandler(message);
+            jTextAreaMessage.setText("");
+        } else {
+            writer.println(clientName + ": " + message);
+            writer.flush();
+            jTextAreaChat.append("Me: " + message + "\n");
+            jTextAreaMessage.setText("");
+        }
+    }
+
+    private void commandHandler(String command) {
+        if (command.startsWith("@msg:")) {
+            String[] parts = command.split(":", 3);
+            if (parts.length == 3) {
+                String target = parts[1].trim();
+                String msg = parts[2].trim();
+                writer.println("@msg:" + target + ":" + clientName + ":" + msg);
+                writer.flush();
+                jTextAreaChat.append("Me → " + target + ": " + msg + "\n");
+            } else {
+                jTextAreaChat.append("*** Usage: @msg:username:message ***\n");
+            }
+            return;
+        }
+
+        switch (command.toLowerCase()) {
+            case "@exit":
+                jTextAreaChat.append("close system........\n");
+                System.exit(0);
+                break;
+
+            case "@clear":
+                jTextAreaChat.setText("");
+                break;
+
+            case "@all":
+                writer.println("@all:" + clientName);
+                writer.flush();
+                break;
+
+            case "@help":
+                jTextAreaChat.append("""
+                                     \n
+                                         ***************************************
+                                         *  @clear: Clear Chat                 * 
+                                         *  @help : Show all commands          *
+                                         *  @exit : exit program               *
+                                         *  @all  : show all connected users   *
+                                         *  @msg:name:text  : Private message  *
+                                         ***************************************\n
+                                         """);
+                break;
+            default:
+                jTextAreaChat.append("*** undefined command: " + command + " ***\n");
+                break;
+        }
     }//GEN-LAST:event_jButtonSendActionPerformed
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
         // TODO add your handling code here:
-        try {
-            socket = new Socket("localhost", 20597);
-            scanner = new Scanner(socket.getInputStream());
-            writer = new PrintWriter(socket.getOutputStream());
+        Thread connectioThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        socket = new Socket("localhost", 20597);
+                        scanner = new Scanner(socket.getInputStream());
+                        writer = new PrintWriter(socket.getOutputStream(), true);
 
-            Thread connectionThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    while (true) {
-                        String message = scanner.nextLine();
-                        jTextAreaChat.append("Server: " + message + "\n");
+                        writer.println("*** " + clientName + " has joined the chat ***");
+                        writer.flush();
+
+                        javax.swing.SwingUtilities.invokeLater(() -> {
+                            jTextAreaChat.append("*** Connected to server ***\n");
+                            jButtonSend.setEnabled(true);
+                        });
+
+                        while (true) {
+                            String message = scanner.nextLine();
+                            javax.swing.SwingUtilities.invokeLater(() -> {
+                                jTextAreaChat.append(message + "\n");
+                            });
+                        }
+
+                    } catch (IOException ex) {
+                        if (writer != null) {
+                            writer.println("*** " + clientName + " has left the chat ***");
+                            writer.flush();
+                        }
+
+                        javax.swing.SwingUtilities.invokeLater(() -> {
+                            jTextAreaChat.append("*** Server is not running, retrying... ***\n");
+                            jButtonSend.setEnabled(false);
+                        });
+
+                        try {
+                            Thread.sleep(3000);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
                     }
                 }
-            });
-            connectionThread.start();
-        } catch (IOException ex) {
-            System.getLogger(ClientChat.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
-        }
+            }
+        });
+        connectioThread.setDaemon(true);
+        connectioThread.start();
     }//GEN-LAST:event_formWindowOpened
+
+    private void jTextAreaMessageKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextAreaMessageKeyPressed
+        // TODO add your handling code here:
+        if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
+            evt.consume();
+            jButtonSend.doClick();
+        }
+    }//GEN-LAST:event_jTextAreaMessageKeyPressed
 
     /**
      * @param args the command line arguments
@@ -129,7 +230,7 @@ public class ClientChat extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new ClientChat().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> new Login().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -143,5 +244,4 @@ public class ClientChat extends javax.swing.JFrame {
     private Socket socket;
     private Scanner scanner;
     private PrintWriter writer;
-
 }
