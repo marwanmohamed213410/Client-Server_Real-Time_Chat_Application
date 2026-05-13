@@ -88,7 +88,7 @@ public class ServerChat extends javax.swing.JFrame {
             jTextAreaMessage.setText("");
         } else {
             synchronized (clients) {
-                for (PrintWriter client : clients) {
+                for (PrintWriter client : clients.keySet()) {
                     client.println("Server: " + message);
                     client.flush();
                 }
@@ -111,10 +111,10 @@ public class ServerChat extends javax.swing.JFrame {
 
             case "@all":
                 StringBuilder sb = new StringBuilder();
-                sb.append("*** Online Clients (").append(clientNames.size()).append(") ***\n");
-                synchronized (clientNames) {
-                    for (String name : clientNames) {
-                        sb.append("  - ").append(name).append("\n");
+                synchronized (clients) {
+                    sb.append("*** Online Clients (" + clients.size() + ") ***\n");
+                    for (String name : clients.values()) {
+                        sb.append("  - " + name + "\n");
                     }
                 }
                 jTextAreaChat.append(sb.toString());
@@ -156,23 +156,34 @@ public class ServerChat extends javax.swing.JFrame {
                             clientWriter = cw;
 
                             synchronized (clients) {
-                                clients.add(cw);
+                                clients.put(cw, "Unknown");
                             }
 
                             while (clientScanner.hasNextLine()) {
                                 String message = clientScanner.nextLine();
 
-                                if (message.startsWith("*** ") && message.contains(" has joined")) {
-                                    String name = message.replace("*** ", "").replace(" has joined the chat ***", "").trim();
-                                    synchronized (clientNames) {
-                                        clientNames.add(name);
+                                if (message.startsWith("@all:")) {
+                                    String requester = message.replace("@all:", "").trim();
+                                    StringBuilder sb = new StringBuilder();
+                                    synchronized (clients) {
+                                        sb.append("*** Online Clients (" + clients.size() + ") ***\n");
+                                        for (java.util.Map.Entry<PrintWriter, String> entry : clients.entrySet()) {
+                                            if (entry.getValue().equals(requester)) {
+                                                sb.append("  - " + entry.getValue() + " (You)\n");
+                                            } else {
+                                                sb.append("  - " + entry.getValue() + "\n");
+                                            }
+                                        }
                                     }
+                                    cw.println(sb.toString());
+                                    cw.flush();
+                                    continue;
                                 }
 
-                                if (message.startsWith("*** ") && message.contains(" has left")) {
-                                    String name = message.replace("*** ", "").replace(" has left the chat ***", "").trim();
-                                    synchronized (clientNames) {
-                                        clientNames.remove(name);
+                                if (message.startsWith("*** ") && message.contains(" has joined")) {
+                                    String name = message.replace("*** ", "").replace(" has joined the chat ***", "").trim();
+                                    synchronized (clients) {
+                                        clients.put(cw, name);
                                     }
                                 }
 
@@ -188,6 +199,7 @@ public class ServerChat extends javax.swing.JFrame {
                                     clients.remove(clientWriter);
                                 }
                             }
+
                             try {
                                 clientSocket.close();
                             } catch (IOException e) {
@@ -209,7 +221,7 @@ public class ServerChat extends javax.swing.JFrame {
 
     private void broadcast(String message, PrintWriter sender) {
         synchronized (clients) {
-            for (PrintWriter client : clients) {
+            for (PrintWriter client : clients.keySet()) {
                 if (client != sender) {
                     client.println(message);
                     client.flush();
@@ -261,6 +273,5 @@ public class ServerChat extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
     private ServerSocket serverSocket;
 
-    private java.util.List<PrintWriter> clients = new java.util.ArrayList<>();
-    private java.util.List<String> clientNames = new java.util.ArrayList<>();
+    private java.util.Map<PrintWriter, String> clients = new java.util.LinkedHashMap<>();
 }

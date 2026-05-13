@@ -113,14 +113,8 @@ public class ClientChat extends javax.swing.JFrame {
                 break;
 
             case "@all":
-                StringBuilder sb = new StringBuilder();
-                sb.append("*** Online Clients (").append(clientNames.size()).append(") ***\n");
-                synchronized (clientNames) {
-                    for (String name : clientNames) {
-                        sb.append("  - ").append(name).append("\n");
-                    }
-                }
-                jTextAreaChat.append(sb.toString());
+                writer.println("@all:" + clientName);
+                writer.flush();
                 break;
 
             case "@help":
@@ -235,7 +229,4 @@ public class ClientChat extends javax.swing.JFrame {
     private Socket socket;
     private Scanner scanner;
     private PrintWriter writer;
-    
-    private java.util.List<PrintWriter> clients = new java.util.ArrayList<>();
-    private java.util.List<String> clientNames = new java.util.ArrayList<>();
 }

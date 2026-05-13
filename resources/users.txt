@@ -6,3 +6,4 @@ admin:6070
 Maro:100100
 nada:1010
 kimo:5050
+ali:2020
