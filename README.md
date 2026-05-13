@@ -138,7 +138,7 @@ user1:666
 
 ---
 
-## 📡 Network
+##  Network
 
 | Setting  | Value     |
 | -------- | --------- |
