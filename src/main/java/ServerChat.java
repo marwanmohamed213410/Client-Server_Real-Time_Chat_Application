@@ -72,7 +72,8 @@ public class ServerChat extends javax.swing.JFrame {
 
         getContentPane().add(jPanel1, java.awt.BorderLayout.PAGE_END);
 
-        setBounds(0, 0, 565, 330);
+        setSize(new java.awt.Dimension(565, 330));
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void formPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_formPropertyChange
@@ -86,59 +87,134 @@ public class ServerChat extends javax.swing.JFrame {
             commandHandler(message);
             jTextAreaMessage.setText("");
         } else {
-            writer.println(message);
-            writer.flush();
-            jTextAreaChat.append("Client: " + message + "\n");
+            synchronized (clients) {
+                for (PrintWriter client : clients) {
+                    client.println("Server: " + message);
+                    client.flush();
+                }
+            }
+            jTextAreaChat.append("Me: " + message + "\n");
             jTextAreaMessage.setText("");
         }
     }//GEN-LAST:event_jButtonSendActionPerformed
-    
+
     private void commandHandler(String command) {
-            switch (command.toLowerCase()) {
-                case "@exit":
-                    jTextAreaChat.append("close system........\n");
-                    System.exit(0);
-                    break;
+        switch (command.toLowerCase()) {
+            case "@exit":
+                jTextAreaChat.append("close system........\n");
+                System.exit(0);
+                break;
 
-                case "@clear":
-                    jTextAreaChat.setText("");
-                    break;
+            case "@clear":
+                jTextAreaChat.setText("");
+                break;
 
-                case "@help":
-                    jTextAreaChat.append("""
+            case "@all":
+                StringBuilder sb = new StringBuilder();
+                sb.append("*** Online Clients (").append(clientNames.size()).append(") ***\n");
+                synchronized (clientNames) {
+                    for (String name : clientNames) {
+                        sb.append("  - ").append(name).append("\n");
+                    }
+                }
+                jTextAreaChat.append(sb.toString());
+                break;
+
+            case "@help":
+                jTextAreaChat.append("""
+                                         \n
                                          ***************************************
                                          *  @clear: Clear Chat                 * 
                                          *  @help : Show all commands          *
                                          *  @exit : exit program               *
+                                         *  @all  : show all connected users   *
                                          ***************************************
+                                         \n
                                          """);
-                    break;
-                default:
-                    jTextAreaChat.append("*** undefined command: " + command + " ***\n");
-                    break;
-            }
+                break;
+            default:
+                jTextAreaChat.append("*** undefined command: " + command + " ***\n");
+                break;
         }
-        
-    private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
-        try {
-            // TODO add your handling code here:
-            serverSocket = new ServerSocket(20597);
-            socket = serverSocket.accept();
-            scanner = new Scanner(socket.getInputStream());
-            writer = new PrintWriter(socket.getOutputStream(), true);
+    }
 
-            Thread connectionThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    while (true) {
-                        String message = scanner.nextLine();
-                        jTextAreaChat.append("Client: " + message + "\n");
-                    }
+    private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
+        // TODO add your handling code here:
+        Thread serverThread = new Thread(() -> {
+            try {
+                serverSocket = new ServerSocket(20597);
+                javax.swing.SwingUtilities.invokeLater(() -> jTextAreaChat.append("*** Server Started ***\n"));
+
+                while (true) {
+                    Socket clientSocket = serverSocket.accept();
+
+                    Thread clientThread = new Thread(() -> {
+                        PrintWriter clientWriter = null;
+                        try {
+                            Scanner clientScanner = new Scanner(clientSocket.getInputStream());
+                            PrintWriter cw = new PrintWriter(clientSocket.getOutputStream(), true);
+                            clientWriter = cw;
+
+                            synchronized (clients) {
+                                clients.add(cw);
+                            }
+
+                            while (clientScanner.hasNextLine()) {
+                                String message = clientScanner.nextLine();
+
+                                if (message.startsWith("*** ") && message.contains(" has joined")) {
+                                    String name = message.replace("*** ", "").replace(" has joined the chat ***", "").trim();
+                                    synchronized (clientNames) {
+                                        clientNames.add(name);
+                                    }
+                                }
+
+                                if (message.startsWith("*** ") && message.contains(" has left")) {
+                                    String name = message.replace("*** ", "").replace(" has left the chat ***", "").trim();
+                                    synchronized (clientNames) {
+                                        clientNames.remove(name);
+                                    }
+                                }
+
+                                javax.swing.SwingUtilities.invokeLater(()
+                                        -> jTextAreaChat.append(message + "\n"));
+                                broadcast(message, cw);
+                            }
+
+                        } catch (IOException ex) {
+                        } finally {
+                            if (clientWriter != null) {
+                                synchronized (clients) {
+                                    clients.remove(clientWriter);
+                                }
+                            }
+                            try {
+                                clientSocket.close();
+                            } catch (IOException e) {
+                            }
+                        }
+                    });
+                    clientThread.setDaemon(true);
+                    clientThread.start();
                 }
-            });
-            connectionThread.start();
-        } catch (IOException ex) {
-            System.getLogger(ServerChat.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+
+            } catch (IOException ex) {
+                javax.swing.SwingUtilities.invokeLater(()
+                        -> jTextAreaChat.append("*** Server Error ***\n"));
+            }
+        });
+        serverThread.setDaemon(true);
+        serverThread.start();
+    }
+
+    private void broadcast(String message, PrintWriter sender) {
+        synchronized (clients) {
+            for (PrintWriter client : clients) {
+                if (client != sender) {
+                    client.println(message);
+                    client.flush();
+                }
+            }
         }
     }//GEN-LAST:event_formWindowOpened
 
@@ -150,30 +226,30 @@ public class ServerChat extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jTextAreaMessageKeyPressed
 
-        /**
-         * @param args the command line arguments
-         */
-        public static void main(String args[]) {
-            /* Set the Nimbus look and feel */
-            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-             */
-            try {
-                for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                    if ("Nimbus".equals(info.getName())) {
-                        javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                        break;
-                    }
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
                 }
-            } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-                logger.log(java.util.logging.Level.SEVERE, null, ex);
             }
-            //</editor-fold>
-
-            /* Create and display the form */
-            java.awt.EventQueue.invokeLater(() -> new ServerChat().setVisible(true));
+        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+            logger.log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(() -> new Login().setVisible(true));
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonSend;
@@ -184,8 +260,7 @@ public class ServerChat extends javax.swing.JFrame {
     private javax.swing.JTextArea jTextAreaMessage;
     // End of variables declaration//GEN-END:variables
     private ServerSocket serverSocket;
-    private Socket socket;
-    private Scanner scanner;
-    private PrintWriter writer;
 
+    private java.util.List<PrintWriter> clients = new java.util.ArrayList<>();
+    private java.util.List<String> clientNames = new java.util.ArrayList<>();
 }
