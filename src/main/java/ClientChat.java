@@ -102,6 +102,20 @@ public class ClientChat extends javax.swing.JFrame {
     }
 
     private void commandHandler(String command) {
+        if (command.startsWith("@msg:")) {
+            String[] parts = command.split(":", 3);
+            if (parts.length == 3) {
+                String target = parts[1].trim();
+                String msg = parts[2].trim();
+                writer.println("@msg:" + target + ":" + clientName + ":" + msg);
+                writer.flush();
+                jTextAreaChat.append("Me → " + target + ": " + msg + "\n");
+            } else {
+                jTextAreaChat.append("*** Usage: @msg:username:message ***\n");
+            }
+            return;
+        }
+
         switch (command.toLowerCase()) {
             case "@exit":
                 jTextAreaChat.append("close system........\n");
@@ -125,6 +139,7 @@ public class ClientChat extends javax.swing.JFrame {
                                          *  @help : Show all commands          *
                                          *  @exit : exit program               *
                                          *  @all  : show all connected users   *
+                                         *  @msg:name:text  : Private message  *
                                          ***************************************\n
                                          """);
                 break;

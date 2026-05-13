@@ -162,6 +162,28 @@ public class ServerChat extends javax.swing.JFrame {
                             while (clientScanner.hasNextLine()) {
                                 String message = clientScanner.nextLine();
 
+                                if (message.startsWith("@msg:")) {
+                                    String[] parts = message.split(":", 4);
+                                    if (parts.length == 4) {
+                                        String target = parts[1].trim();
+                                        String sender = parts[2].trim();
+                                        String msg = parts[3].trim();
+
+                                        synchronized (clients) {
+                                            for (java.util.Map.Entry<PrintWriter, String> entry : clients.entrySet()) {
+                                                if (entry.getValue().equals(target)) {
+                                                    entry.getKey().println("[Private] " + sender + ": " + msg);
+                                                    entry.getKey().flush();
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        javax.swing.SwingUtilities.invokeLater(() -> jTextAreaChat.append("[Private] " + sender + " → " + target + "\n"));
+                                        continue;
+                                    }
+                                }
+
                                 if (message.startsWith("@all:")) {
                                     String requester = message.replace("@all:", "").trim();
                                     StringBuilder sb = new StringBuilder();
