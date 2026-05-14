@@ -52,7 +52,6 @@ Client-Server_Real-Time_Chat_Application/
 
 - Java 17 or higher
 - Apache NetBeans IDE
-- Java Swing
 - Maven
 
 ---
@@ -151,3 +150,6 @@ user1:666
 ## Author
 
 **Done by: Marwan Mohamed (3r year computer science & information technology) for: Network programming Project Date: May 2026**
+
+[Documentation](https://drive.google.com/file/d/1GBVQ0iaLn592afdhEh1l8EiWeBGHzwjY/view?usp=sharing) <br>
+[Demo video](https://drive.google.com/file/d/12bKd0kjEB__8oRWeNunr5pJD2dzzIJow/view?usp=sharing)
