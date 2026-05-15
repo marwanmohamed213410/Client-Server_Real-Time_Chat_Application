@@ -22,7 +22,7 @@ A real-time chat application built with Java Swing, supporting multiple clients 
 - User authentication (Login / Sign Up)
 - Server-based broadcast messaging
 - Private messaging between clients
-- Auto-reconnect if server is down
+- Auto-reconnect if the server is down
 - Show online users
 - Command system
 
@@ -60,7 +60,7 @@ Client-Server_Real-Time_Chat_Application/
 
 ### 1. Start the Server
 
-Login with the server account:
+Log in with the server account:
 
 ```
 Username: admin
@@ -81,7 +81,7 @@ mvn exec:java -Dexec.mainClass=Login
 ### 3. Sign Up / Login
 
 - New users can register via the **Sign Up** screen
-- Existing users login with their username and password
+- Existing users log in with their username and password
 - Accounts are saved in `resources/users.txt`
 
 ---
@@ -90,7 +90,7 @@ mvn exec:java -Dexec.mainClass=Login
 
 1. Start the **Server** first
 2. Open one or more **Client** windows
-3. Login with your credentials
+3. Log in with your credentials
 4. Start chatting!
 
 ---
@@ -149,7 +149,7 @@ user1:666
 
 ## Author
 
-**Done by: Marwan Mohamed (3r year computer science & information technology) for: Network programming Project Date: May 2026**
+**Done by: Marwan Mohamed (3rd year computer science & information technology) for: Network programming Project Date: May 2026**
 
 [Documentation](https://drive.google.com/file/d/1GBVQ0iaLn592afdhEh1l8EiWeBGHzwjY/view?usp=sharing) <br>
 [Demo video](https://drive.google.com/file/d/12bKd0kjEB__8oRWeNunr5pJD2dzzIJow/view?usp=sharing)
